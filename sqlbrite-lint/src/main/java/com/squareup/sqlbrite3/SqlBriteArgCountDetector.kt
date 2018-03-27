@@ -50,7 +50,7 @@ class SqlBriteArgCountDetector : Detector(), Detector.UastScanner {
 
   override fun getApplicableMethodNames() = listOf(CREATE_QUERY_METHOD_NAME, QUERY_METHOD_NAME)
 
-  override fun visitMethod(context: JavaContext, call: UCallExpression, method: PsiMethod) {
+  override fun visitMethod(context: JavaContext, node: UCallExpression, method: PsiMethod) {
     val evaluator = context.evaluator
 
     if (evaluator.isMemberInClass(method, BRITE_DATABASE)) {
@@ -59,15 +59,15 @@ class SqlBriteArgCountDetector : Detector(), Detector.UastScanner {
 
       // Position of sql parameter depends on method.
       val sql = evaluateString(context,
-          call.valueArguments[if (call.isQueryMethod()) 0 else 1], true) ?: return
+          node.valueArguments[if (node.isQueryMethod()) 0 else 1], true) ?: return
 
       // Count only vararg arguments.
-      val argumentsCount = call.valueArgumentCount - if (call.isQueryMethod()) 1 else 2
+      val argumentsCount = node.valueArgumentCount - if (node.isQueryMethod()) 1 else 2
       val questionMarksCount = sql.count { it == '?' }
       if (argumentsCount != questionMarksCount) {
         val requiredArguments = "$questionMarksCount ${"argument".pluralize(questionMarksCount)}"
         val actualArguments = "$argumentsCount ${"argument".pluralize(argumentsCount)}"
-        context.report(ISSUE, call, context.getLocation(call), "Wrong argument count, " +
+        context.report(ISSUE, node, context.getLocation(node), "Wrong argument count, " +
             "query $sql requires $requiredArguments, but was provided $actualArguments")
       }
     }
